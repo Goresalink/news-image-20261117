@@ -12,7 +12,8 @@ a collage of four real news photos of the day's top stories:
     its airspace
 
 No network access is needed: the program only copies the bundled image, so
-two runs write identical bytes.
+two runs write identical bytes. The output is verified after writing: it must
+exist and stay within the contest's 1 MiB size limit.
 """
 import os
 import shutil
@@ -20,12 +21,25 @@ import shutil
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(HERE, "frontpage.png")
 DEST = "/output/entry.png"
+MAX_BYTES = 1024 * 1024  # contest limit: entry image must be <= 1 MiB
+
+
+def ensure_output_dir(path):
+    """Create the output directory if missing (robust to a fresh /output)."""
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
 
 
 def main():
-    os.makedirs(os.path.dirname(DEST), exist_ok=True)
+    ensure_output_dir(DEST)
     shutil.copyfile(SOURCE, DEST)
-    print(f"wrote {DEST} ({os.path.getsize(DEST)} bytes)")
+    size = os.path.getsize(DEST)  # raises if the copy did not land
+    if size > MAX_BYTES:
+        raise SystemExit(
+            f"output too large: {size} bytes exceeds the 1 MiB limit"
+        )
+    print(f"wrote {DEST} ({size} bytes)")
 
 
 if __name__ == "__main__":
